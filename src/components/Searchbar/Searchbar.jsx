@@ -4,10 +4,10 @@ import { Header, Form, Input, Button, Label } from './Searchbar.styles.jsx';
 export const Searchbar = ({ onSubmit }) => {
   const handleSearch = e => {
     e.preventDefault();
-    const searchQuery = e.target.elements.imageName.value.trim();
+    let searchQuery = e.target.elements.imageName.value.trim();
 
     if (!searchQuery) {
-      e.target.elements.imageName.value = null;
+      e.target.elements.imageName.value = '';
     }
 
     onSubmit(searchQuery);

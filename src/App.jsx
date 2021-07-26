@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Searchbar } from './components/Searchbar/Searchbar';
 import { ImageGallery } from './components/ImageGallery/ImageGallery';
 import { Button } from './components/Button/Button';
@@ -9,39 +9,37 @@ import { ToastContainer } from 'react-toastify';
 import { notFound } from './service/notifications';
 import { Container } from './App.styles';
 
-export class App extends Component {
-  state = {
-    searchQuery: null,
-    images: [],
-    page: 1,
-    showModal: false,
-    selectedImage: null,
-    status: 'idel',
-  };
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [status, setStatus] = useState('idel');
 
-  async componentDidUpdate(_, prevState) {
-    const { searchQuery, page } = this.state;
+  useEffect(() => {
+    if (!searchQuery) {
+      return;
+    }
 
-    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.setState({ status: 'pending' });
+    async function onFetchImages() {
       try {
+        setStatus('pending');
         const images = await getImages(searchQuery, page);
 
         if (!images.length) {
-          this.setState({ status: 'idel' });
+          setStatus('idel');
           notFound(searchQuery);
-          throw new Error();
+          throw new Error(`No results were found for ${searchQuery}`);
         }
 
-        if (searchQuery === '') {
-          this.setState({ status: 'idel' });
-          throw new Error();
+        if (!searchQuery) {
+          setStatus('idel');
+          throw new Error('');
         }
 
-        this.setState(prevState => ({
-          images: [...prevState.images, ...images],
-          status: 'resolve',
-        }));
+        setImages(s => [...s, ...images]);
+        setStatus('resolve');
 
         page > 1 &&
           window.scrollTo({
@@ -49,78 +47,52 @@ export class App extends Component {
             behavior: 'smooth',
           });
       } catch (error) {
-        console.error();
+        console.log(error.message);
       }
     }
-  }
 
-  handleFormSubmit = searchQuery => {
-    if (this.state.searchQuery === searchQuery) {
-      return;
-    }
+    onFetchImages();
+  }, [page, searchQuery]);
 
-    this.setState({ images: [], page: 1 });
-    this.setState({ searchQuery });
+  const handleFormSubmit = searchQuery => {
+    setImages([]);
+    setPage(1);
+    setSearchQuery(searchQuery);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onLoadMore = () => setPage(s => s + 1);
+
+  const onModalOpen = (src, alt) => {
+    setSelectedImage({ src, alt });
+    setShowModal(true);
+
+    window.addEventListener('keydown', handleKeyDown);
   };
 
-  onImageSelect = (src, alt) => {
-    this.setState({
-      selectedImage: { src, alt },
-      showModal: true,
-    });
+  const onModalClose = () => {
+    setShowModal(false);
+
+    window.removeEventListener('keydown', handleKeyDown);
   };
 
-  onModalClose = () => {
-    this.setState({
-      showModal: false,
-    });
+  const handleKeyDown = e => {
+    if (e.code === 'Escape') {
+      onModalClose();
+    }
   };
 
-  render() {
-    const { images, status, showModal } = this.state;
-
-    if (status === 'idel') {
-      return (
-        <Container>
-          <Searchbar onSubmit={this.handleFormSubmit} />
-          <ToastContainer />
-        </Container>
-      );
-    }
-
-    if (status === 'pending') {
-      return (
-        <Container>
-          <Searchbar onSubmit={this.handleFormSubmit} />
-          <ImageGallery images={images} />
-          {images.length > 0 && <Button onLoadMore={this.onLoadMore} />}
-          <Spiner />
-        </Container>
-      );
-    }
-
-    if (status === 'resolve') {
-      return (
-        <Container>
-          <Searchbar onSubmit={this.handleFormSubmit} />
-          <ImageGallery images={images} onImageSelect={this.onImageSelect} />
-          <Button onLoadMore={this.onLoadMore} />
-          {showModal && (
-            <Modal
-              onModalClose={this.onModalClose}
-              selectedImage={this.state.selectedImage}
-            />
-          )}
-        </Container>
-      );
-    }
-  }
+  return (
+    <Container>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {(status === 'resolve' || status === 'pending') && (
+        <ImageGallery images={images} onImageSelect={onModalOpen} />
+      )}
+      {images.length > 0 && <Button onLoadMore={onLoadMore} />}
+      {showModal && (
+        <Modal onModalClose={onModalClose} selectedImage={selectedImage} />
+      )}
+      {status === 'pending' && <Spiner />}
+      <ToastContainer />
+    </Container>
+  );
 }
-
-export default App;

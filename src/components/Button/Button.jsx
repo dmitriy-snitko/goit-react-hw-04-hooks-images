@@ -3,7 +3,7 @@ import { LoadMore } from './Button.styles';
 
 export const Button = ({ onLoadMore }) => {
   return (
-    <LoadMore onClick={onLoadMore} type="button" className="Button">
+    <LoadMore onClick={onLoadMore} type="button">
       Load More
     </LoadMore>
   );
