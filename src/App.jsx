@@ -6,7 +6,7 @@ import { Spiner } from './components/Spiner/Spiner';
 import { Modal } from './components/Modal/Modal';
 import getImages from './service/api';
 import { ToastContainer } from 'react-toastify';
-import { notFound } from './service/notifications';
+import { toast } from 'react-toastify';
 import { Container } from './App.styles';
 
 export default function App() {
@@ -28,14 +28,7 @@ export default function App() {
         const images = await getImages(searchQuery, page);
 
         if (!images.length) {
-          setStatus('idel');
-          notFound(searchQuery);
           throw new Error(`No results were found for ${searchQuery}`);
-        }
-
-        if (!searchQuery) {
-          setStatus('idel');
-          throw new Error('');
         }
 
         setImages(s => [...s, ...images]);
@@ -47,7 +40,8 @@ export default function App() {
             behavior: 'smooth',
           });
       } catch (error) {
-        console.log(error.message);
+        setStatus('rejected');
+        toast.info(error.message);
       }
     }
 
