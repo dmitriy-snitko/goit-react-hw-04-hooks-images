@@ -1,37 +1,33 @@
-import PropTypes from 'prop-types';
-import { Header, Form, Input, Button, Label } from './Searchbar.styles.jsx';
+import { Formik } from 'formik';
+import * as yup from 'yup';
+import { SearchForm, Input, Button } from './Searchbar.styled.js';
+import { toast } from 'react-toastify';
 
-export const Searchbar = ({ onSubmit }) => {
-  const handleSearch = e => {
-    e.preventDefault();
-    let searchQuery = e.target.elements.imageName.value.trim();
+let schema = yup.object().shape({
+  searchQuery: yup.string().required(),
+});
 
-    if (!searchQuery) {
-      e.target.elements.imageName.value = '';
+export const Searchbar = ({ onSearch }) => {
+  const handleSubmit = async ({ searchQuery }, { resetForm }) => {
+    try {
+      await schema.validate({ searchQuery });
+      onSearch(searchQuery);
+      resetForm();
+    } catch (error) {
+      toast.warning(error.message);
     }
-
-    onSubmit(searchQuery);
   };
 
   return (
-    <Header>
-      <Form onSubmit={handleSearch}>
-        <Button type="submit">
-          <Label>Search</Label>
-        </Button>
-
+    <Formik initialValues={{ searchQuery: '' }} onSubmit={handleSubmit}>
+      <SearchForm autoComplete="off">
+        <Button type="submit" />
         <Input
-          name="imageName"
           type="text"
-          autoComplete="off"
-          autoFocus
+          name="searchQuery"
           placeholder="Search images and photos"
         />
-      </Form>
-    </Header>
+      </SearchForm>
+    </Formik>
   );
-};
-
-Searchbar.prototype = {
-  onSubmit: PropTypes.func.isRequired,
 };
